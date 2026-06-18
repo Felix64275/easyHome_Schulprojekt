@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 76.8, "left": 158.44, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -80.4,
+      "left": 416.6,
+      "attrs": { "color": "red" }
+    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -172.5, "left": 301.8, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir1", "top": -140, "left": 59.82, "attrs": {} },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -202.6,
+      "left": -123,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 198.2,
+      "left": -38.4,
+      "attrs": { "color": "green", "xray": "1" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 137.8,
+      "left": 411.95,
+      "rotate": 270,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "led1:C", "esp:GND.2", "green", [ "v28.8", "h0.4", "v192" ] ],
+    [ "servo1:GND", "esp:GND.3", "black", [ "v57.6", "h345.6", "v163.2" ] ],
+    [ "servo1:V+", "esp:5V", "green", [ "h0.1", "v268.8" ] ],
+    [ "servo1:PWM", "esp:18", "green", [ "h0.2", "v172.8" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v115.2", "h9.6" ] ],
+    [ "dht1:SDA", "esp:4", "green", [ "v48", "h0.1", "v230.4" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v38.4", "v124.8" ] ],
+    [ "pir1:VCC", "esp:5V", "red", [ "v38.4", "v288" ] ],
+    [ "pir1:OUT", "esp:5", "green", [ "v28.8", "h182.26", "v211.2" ] ],
+    [ "pir1:GND", "esp:GND.2", "black", [ "v67.2", "h162.94", "v86.4" ] ],
+    [ "btn1:1.l", "esp:13", "green", [ "h-19.2", "v-38.4", "h134.4", "v259.2" ] ],
+    [ "btn1:2.r", "esp:GND.1", "green", [ "h57.8", "v192.2" ] ],
+    [ "esp:2", "r1:1", "green", [ "h0" ] ],
+    [ "r1:2", "led1:A", "green", [ "h0" ] ]
+  ],
+  "dependencies": {}
+}
