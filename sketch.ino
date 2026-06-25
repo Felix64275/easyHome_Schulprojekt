@@ -1,8 +1,22 @@
 #include <ESP32Servo.h>
 #include <DHTesp.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
 // =====================================================
-// PIN-BELEGUNG
+// WLAN + MQTT
+// =====================================================
+
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+const char* mqtt_server = "test.mosquitto.org";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// =====================================================
+// PIN-BELEGUNG, ESP 32
 // =====================================================
 
 // LED
@@ -20,14 +34,12 @@ const int DHT_PIN = 16;
 // Servo (Rollo)
 const int SERVO_PIN = 18;
 
-
 // =====================================================
 // OBJEKTE ERSTELLEN
 // =====================================================
 
 Servo rollo;
 DHTesp dht;
-
 
 // =====================================================
 // VARIABLEN
@@ -39,19 +51,84 @@ bool ledStatus = false;
 // PIR Status speichern
 bool letzteBewegung = false;
 
+// Rollo Status speichern
+String rolloStatus = "Offen";
+
 // Zeitsteuerung für DHT22
 unsigned long letzteMessung = 0;
 const unsigned long messIntervall = 5000;
 
+// =====================================================
+// WLAN VERBINDEN
+// =====================================================
+
+void setupWifi() {
+
+  Serial.println("Verbinde WLAN...");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WLAN verbunden!");
+}
+
+// =====================================================
+// MQTT VERBINDEN
+// =====================================================
+
+void reconnectMQTT() {
+
+  while (!client.connected()) {
+
+    Serial.println("Verbinde MQTT...");
+
+    if (client.connect("easyHomeESP32")) {
+
+      Serial.println("MQTT verbunden!");
+
+      // Anfangswerte senden
+  client.publish(
+    "easyHome/Wohnung/Wohnzimmer/Licht",
+    "Wohnzimmerlicht AUS"
+  );
+
+  client.publish(
+    "easyHome/Wohnung/Wohnzimmer/Rollo",
+    "Offen"
+  );
+
+  client.publish(
+    "easyHome/Wohnung/Flur/Bewegung",
+    "Keine Bewegung"
+  );
+
+
+    } else {
+
+      Serial.print("MQTT Fehler: ");
+      Serial.println(client.state());
+
+      delay(2000);
+    }
+  }
+}
 
 // =====================================================
 // SETUP
-// Wird einmal beim Start ausgeführt
 // =====================================================
 
 void setup() {
 
   Serial.begin(115200);
+
+  setupWifi();
+
+  client.setServer(mqtt_server, 1883);
 
   // ---------- LED ----------
   pinMode(LED_PIN, OUTPUT);
@@ -74,16 +151,21 @@ void setup() {
   Serial.println("Smart Home System gestartet");
 }
 
-
 // =====================================================
 // LOOP
-// Läuft dauerhaft
 // =====================================================
 
 void loop() {
 
+  // MQTT Verbindung prüfen
+  if (!client.connected()) {
+    reconnectMQTT();
+  }
+
+  client.loop();
+
   // =====================================================
-  // TASTER + LED
+  // TASTER + LED/Licht
   // =====================================================
 
   if (digitalRead(BUTTON_PIN) == LOW) {
@@ -92,34 +174,62 @@ void loop() {
 
     digitalWrite(LED_PIN, ledStatus);
 
-    Serial.println("Taster gedrueckt");
+    Serial.println("Wohnzimmerlichtschalter betätigt");
 
-    delay(250);   // Entprellen des Tasters
+    if (ledStatus) {
+
+      client.publish(
+        "easyHome/Wohnung/Wohnzimmer/Licht",
+        "Ein"
+      );
+
+      Serial.println("Wohnzimmerlicht: EIN");
+
+    } else {
+
+      client.publish(
+        "easyHome/Wohnung/Wohnzimmer/Licht",
+        "Aus"
+      );
+
+      Serial.println("Wohnzimmerlicht: AUS");
+    }
+
+    delay(250);
   }
 
-
   // =====================================================
-  // PIR SENSOR
-  // Nur bei Zustandsänderung melden
+  // PIR SENSOR/ Bewegungsmelder
   // =====================================================
 
- bool aktuelleBewegung = digitalRead(PIR_PIN);
+  bool aktuelleBewegung = digitalRead(PIR_PIN);
 
-if (aktuelleBewegung != letzteBewegung) {
+  if (aktuelleBewegung != letzteBewegung) {
 
   if (aktuelleBewegung) {
-    Serial.println("Bewegung erkannt!");
+
+    Serial.println("Bewegung im Flur erkannt");
+
+    client.publish(
+      "easyHome/Wohnung/Flur/Bewegung",
+      "Bewegung erkannt"
+    );
+
   } else {
-    Serial.println("Keine Bewegung mehr");
+
+    Serial.println("Keine Bewegung im Flur");
+
+    client.publish(
+      "easyHome/Wohnung/Flur/Bewegung",
+      "Keine Bewegung"
+    );
   }
 
   letzteBewegung = aktuelleBewegung;
 }
 
-
   // =====================================================
-  // DHT22 SENSOR
-  // Nur alle 2 Sekunden messen
+  // DHT22 SENSOR/ Temperatursensor/ Luftfeuchtigkeitsensor
   // =====================================================
 
   if (millis() - letzteMessung >= messIntervall) {
@@ -135,15 +245,26 @@ if (aktuelleBewegung != letzteBewegung) {
     Serial.println(" %");
 
     Serial.println("--------------------------");
+  // MQTT Temperatur senden
+String temperatur = String(data.temperature);
 
+client.publish(
+  "easyHome/Wohnung/Flur/Temperatur",
+  temperatur.c_str()
+);
+
+// MQTT Luftfeuchtigkeit senden
+String luftfeuchtigkeit = String(data.humidity);
+
+client.publish(
+  "easyHome/Wohnung/Flur/Luftfeuchtigkeit",
+  luftfeuchtigkeit.c_str()
+);
     letzteMessung = millis();
   }
 
-
   // =====================================================
-  // SERVO / ROLLO
+  // !!!!!SERVO / ROLLO - NOCH NICHT STEUERBAR !!!!!
   // Aktuell auf 180° fest eingestellt
-  // MQTT-Steuerung folgt später
   // =====================================================
-
 }
