@@ -91,6 +91,8 @@ void reconnectMQTT() {
 
       Serial.println("MQTT verbunden!");
 
+  client.subscribe("easyHome/Wohnung/Wohnzimmer/Licht");
+
       // Anfangswerte senden
   client.publish(
     "easyHome/Wohnung/Wohnzimmer/Licht",
@@ -117,6 +119,34 @@ void reconnectMQTT() {
     }
   }
 }
+// =====================================================
+// MQTT CALLBACK
+// =====================================================
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  String nachricht = "";
+
+  for (int i = 0; i < length; i++) {
+    nachricht += (char)payload[i];
+  }
+
+  Serial.print("Nachricht empfangen: ");
+  Serial.println(nachricht);
+
+  if (String(topic) == "easyHome/Wohnung/Wohnzimmer/Licht") {
+
+    if (nachricht == "Ein") {
+      digitalWrite(LED_PIN, HIGH);
+      ledStatus = true;
+    }
+
+    else if (nachricht == "Aus") {
+      digitalWrite(LED_PIN, LOW);
+      ledStatus = false;
+    }
+  }
+}
 
 // =====================================================
 // SETUP
@@ -129,6 +159,8 @@ void setup() {
   setupWifi();
 
   client.setServer(mqtt_server, 1883);
+
+  client.setCallback(callback);
 
   // ---------- LED ----------
   pinMode(LED_PIN, OUTPUT);
