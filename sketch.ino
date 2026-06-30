@@ -93,15 +93,12 @@ void reconnectMQTT() {
 
   client.subscribe("easyHome/Wohnung/Wohnzimmer/Licht");
 
+  client.subscribe("easyHome/Wohnung/Wohnzimmer/Rollo");
+
       // Anfangswerte senden
   client.publish(
     "easyHome/Wohnung/Wohnzimmer/Licht",
     "Wohnzimmerlicht AUS"
-  );
-
-  client.publish(
-    "easyHome/Wohnung/Wohnzimmer/Rollo",
-    "Offen"
   );
 
   client.publish(
@@ -146,6 +143,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
       ledStatus = false;
     }
   }
+
+if (String(topic) == "easyHome/Wohnung/Wohnzimmer/Rollo") {
+
+  if (nachricht == "Offen") {
+
+    rollo.write(180);
+    rolloStatus = "Offen";
+
+    Serial.println("Rollo geöffnet");
+
+  }
+
+  else if (nachricht == "Geschlossen") {
+
+    rollo.write(0);
+    rolloStatus = "Geschlossen";
+
+    Serial.println("Rollo geschlossen");
+
+  }
+}
+
 }
 
 // =====================================================
@@ -294,9 +313,4 @@ client.publish(
 );
     letzteMessung = millis();
   }
-
-  // =====================================================
-  // !!!!!SERVO / ROLLO - NOCH NICHT STEUERBAR !!!!!
-  // Aktuell auf 180° fest eingestellt
-  // =====================================================
 }
