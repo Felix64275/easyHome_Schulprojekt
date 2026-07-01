@@ -1,31 +1,23 @@
 class GestureDetector:
 
-    def detect_gesture(self, hand_landmarks):
+    def convert_gesture(self, mediapipe_gesture):
 
-        finger_tips = [8, 12, 16, 20]
-        finger_pips = [6, 10, 14, 18]
+        if mediapipe_gesture == "Closed_Fist":
+            return "ALLE LICHTER AUS"
 
-        offene_finger = 0
+        elif mediapipe_gesture == "Open_Palm":
+            return "WOHNZIMMER LICHT AN"
 
-        # Offene Finger zählen
-        for tip, pip in zip(finger_tips, finger_pips):
-            if hand_landmarks[tip].y < hand_landmarks[pip].y:
-                offene_finger += 1
+        elif mediapipe_gesture == "Pointing_Up":
+            return "KUECHE LICHT AN"
 
-        # Hand offen → Licht AN
-        if offene_finger >= 4:
-            return "LICHT AN"
+        elif mediapipe_gesture == "Victory":
+            return "FLUR LICHT AN"
 
-        # Faust → Licht AUS
-        if offene_finger == 0:
-            return "LICHT AUS"
-
-        # Ein Finger → Rollladen AUF
-        if offene_finger == 1:
+        elif mediapipe_gesture == "Thumb_Up":
             return "ROLLLADEN AUF"
 
-        # Zwei Finger → Rollladen ZU
-        if offene_finger == 2:
+        elif mediapipe_gesture == "Thumb_Down":
             return "ROLLLADEN ZU"
 
         return ""
